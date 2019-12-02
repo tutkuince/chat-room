@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 
 @Component
-@ServerEndpoint("/chat/{username}")
+@ServerEndpoint("/chat")
 public class WebSocketChatServer {
     /**
      * All chat sessions.
@@ -47,7 +47,7 @@ public class WebSocketChatServer {
         //TODO: add on open connection.
         onlineSessions.put(session.getId(), session);
 
-        Message message = new Message(session.getId(), onlineSessions.size(), "New Open", "Enter");
+        Message message = new Message(session.getId(), onlineSessions.size(), "New Open", "ENTER");
         String jsonMessage = JSON.toJSONString(message);
 
         sendMessageToAll(jsonMessage);
@@ -61,7 +61,10 @@ public class WebSocketChatServer {
         //TODO: add send message.
         Message message = JSON.parseObject(jsonStr, Message.class);
 
-        Message newMessage = new Message(message.getUsername(), onlineSessions.size(), message.getMessage(), "CHAT");
+        String msg = message.getMessage();
+        String username = message.getUsername();
+
+        Message newMessage = new Message(username, onlineSessions.size(), msg, "SPEAK");
         String jsonMessage = JSON.toJSONString(newMessage);
         sendMessageToAll(jsonMessage);
     }
@@ -74,7 +77,7 @@ public class WebSocketChatServer {
         //TODO: add close connection.
         onlineSessions.remove(session.getId());
 
-        Message message = new Message(session.getId(), onlineSessions.size(), "Leave", "Leave");
+        Message message = new Message(session.getId(), onlineSessions.size(), "Leave", "LEAVE");
         String jsonMessage = JSON.toJSONString(message);
         sendMessageToAll(jsonMessage);
     }
