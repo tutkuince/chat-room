@@ -1,9 +1,12 @@
 package com.muditasoft.chatroom.controller;
 
+import com.alibaba.fastjson.JSON;
+import com.muditasoft.chatroom.model.Message;
 import org.springframework.stereotype.Component;
 
 import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
+import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -15,15 +18,25 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 
 @Component
-@ServerEndpoint("/chat")
+@ServerEndpoint("/chat/{username}")
 public class WebSocketChatServer {
     /**
      * All chat sessions.
      */
     private static Map<String, Session> onlineSessions = new ConcurrentHashMap<>();
 
+
+    /**
+     * Send message to each active session.
+     */
     private static void sendMessageToAll(String msg) {
-        //TODO: add send message method.
+        onlineSessions.forEach(((s, session) -> {
+            try {
+                session.getBasicRemote().sendText(msg);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }));
     }
 
     /**
@@ -32,6 +45,12 @@ public class WebSocketChatServer {
     @OnOpen
     public void onOpen(Session session) {
         //TODO: add on open connection.
+        onlineSessions.put(session.getId(), session);
+
+        Message message = new Message(session.getId(), onlineSessions.size(), "New Open", "Enter");
+        String jsonMessage = JSON.toJSONString(message);
+
+        sendMessageToAll(jsonMessage);
     }
 
     /**
@@ -40,6 +59,11 @@ public class WebSocketChatServer {
     @OnMessage
     public void onMessage(Session session, String jsonStr) {
         //TODO: add send message.
+        Message message = JSON.parseObject(jsonStr, Message.class);
+
+        Message newMessage = new Message(message.getUsername(), onlineSessions.size(), message.getMessage(), "CHAT");
+        String jsonMessage = JSON.toJSONString(newMessage);
+        sendMessageToAll(jsonMessage);
     }
 
     /**
@@ -48,6 +72,11 @@ public class WebSocketChatServer {
     @OnClose
     public void onClose(Session session) {
         //TODO: add close connection.
+        onlineSessions.remove(session.getId());
+
+        Message message = new Message(session.getId(), onlineSessions.size(), "Leave", "Leave");
+        String jsonMessage = JSON.toJSONString(message);
+        sendMessageToAll(jsonMessage);
     }
 
     /**
